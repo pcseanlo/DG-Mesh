@@ -29,7 +29,6 @@ from utils.system_utils import load_config_from_file, merge_config
 from utils.camera_utils import get_camera_trajectory_pose
 from arguments import ModelParams, PipelineParams, OptimizationParams
 
-
 try:
     from torch.utils.tensorboard import SummaryWriter
 
@@ -106,11 +105,6 @@ def rendering_trajectory(
     # Create folders
     image_folder = osp.join(dataset.model_path, "images")
     os.makedirs(image_folder, exist_ok=True)
-    final_images = []
-    # Lists to collect per-frame deformation deltas and deformed positions
-    dxyz_list = []
-    drot_list = []
-    dscale_list = []
     deformed_list = []
 
     for idx, pose in tqdm(enumerate(camera_poses)):
@@ -126,23 +120,8 @@ def rendering_trajectory(
             gaussians.get_xyz.detach(), time_input
         )
         d_normal = deform_normal.step(gaussians.get_xyz.detach(), time_input)
-        # Store deformation deltas as CPU numpy arrays for later saving
-        try:
-            dxyz_np = d_xyz.detach().cpu().numpy()
-        except Exception:
-            dxyz_np = np.array(d_xyz)
-        if isinstance(d_rotation, torch.Tensor):
-            drot_np = d_rotation.detach().cpu().numpy()
-        else:
-            drot_np = np.array(d_rotation)
-        if isinstance(d_scaling, torch.Tensor):
-            dscale_np = d_scaling.detach().cpu().numpy()
-        else:
-            dscale_np = np.array(d_scaling)
-        dxyz_list.append(dxyz_np)
-        drot_list.append(drot_np)
-        dscale_list.append(dscale_np)
-        # Compute and store deformed gaussian positions (original + delta)
+
+        # Compute and store deformed gaussian positions
         try:
             base_xyz = gaussians.get_xyz.detach()
         except Exception:
@@ -150,7 +129,6 @@ def rendering_trajectory(
         try:
             deformed_np = (base_xyz + d_xyz).detach().cpu().numpy()
         except Exception:
-            # Fallback if tensors aren't torch.Tensors
             deformed_np = np.array(base_xyz) + np.array(d_xyz)
         deformed_list.append(deformed_np)
         
@@ -170,9 +148,6 @@ def rendering_trajectory(
         mesh_image_np = mesh_image.permute(1, 2, 0).detach().cpu().numpy() * 255
 
         # Render the mesh itself
-        # mesh_image_shape = mesh_shape_renderer(
-        #     verts, faces, render_cam, mask=mask, orig_img=None, bg_color=bg_color
-        # )
         mesh_image_shape = mesh_shape_renderer(
             verts, faces, render_cam
         )
@@ -182,9 +157,6 @@ def rendering_trajectory(
         gaussian_point_img = pointcloud_renderer(gaussians.get_xyz + d_xyz, render_cam)
         gaussian_point_img_np = gaussian_point_img
 
-        # check shapes
-        # print(mesh_image_np.shape, mesh_image_shape_np.shape, gaussian_point_img_np.shape)
-
         # Compose the final image
         final_img = np.hstack(
             [mesh_image_np, mesh_image_shape_np, gaussian_point_img_np]
@@ -192,24 +164,23 @@ def rendering_trajectory(
         img_save_path = osp.join(image_folder, f"{idx:04d}.png")
         imageio.imwrite(img_save_path, final_img.astype(np.uint8))
 
-        final_images.append(final_img)
-
-    # Save the final video
-    final_images = np.stack(final_images).astype(np.uint8)
-
-    # Save deformation arrays collected per-frame (store deformed positions instead of raw d_xyz)
-    if len(dxyz_list) > 0:
+    # Save deformed position arrays
+    if len(deformed_list) > 0:
         try:
-            # Stack arrays: shape will be (frames, N, 3) for positions
             deformed_arr = np.stack(deformed_list)
-            drot_arr = np.stack(drot_list)
-            dscale_arr = np.stack(dscale_list)
             np.save(osp.join(dataset.model_path, "deformed_xyz.npy"), deformed_arr)
-            np.save(osp.join(dataset.model_path, "d_rotation.npy"), drot_arr)
-            np.save(osp.join(dataset.model_path, "d_scaling.npy"), dscale_arr)
-            print(f"Saved deformed positions and other deformation arrays to {dataset.model_path}")
+            print(f"Saved deformed positions to {dataset.model_path}")
         except Exception as e:
             print(f"Failed saving deformation arrays: {e}")
+
+    # Read images from disk to create video
+    print(f"Reading {total_frames} images from disk to create video...")
+    final_images = []
+    for idx in range(total_frames):
+        img_path = osp.join(image_folder, f"{idx:04d}.png")
+        img = imageio.imread(img_path)
+        final_images.append(img)
+    final_images = np.stack(final_images).astype(np.uint8)
 
     # Save the gif
     with imageio.get_writer(
@@ -268,7 +239,7 @@ if __name__ == "__main__":
             unique_str = os.getenv("OAR_JOB_ID")
         else:
             unique_str = str(uuid.uuid4())
-        lp.model_path = os.path.join("./DG-Mesh/output/", unique_str[0:10])
+        lp.model_path = os.path.join("./DG-Mesh/outputs/", unique_str[0:10])
     lp.model_path = osp.join(lp.model_path, folder_name)
     # Set up output folder
     print("Output folder: {}".format(lp.model_path))
