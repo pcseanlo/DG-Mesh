@@ -275,7 +275,7 @@ def mesh_shape_renderer(
         R=R,
         T=T,
         focal_length=((fx, fy),),
-        principal_point=((viewpoint_cam.image_height - cx, cy),),
+        principal_point=((cx, cy),),
         image_size=((viewpoint_cam.image_height, viewpoint_cam.image_width),),
         device=torch.device("cuda"),
         in_ndc=False,
