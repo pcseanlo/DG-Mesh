@@ -1,5 +1,5 @@
-source_path: "data_v4"
-model_path: "outputs/lamp"
+source_path: "DG-Mesh/data"
+model_path: "DG-Mesh/outputs/lamp"
 data_type: "ours"
 
 downsample: 1.0
