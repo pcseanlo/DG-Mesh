@@ -1,4 +1,4 @@
-source_path: "data/iphone-captured/tiger"
+source_path: "iphone-captured/tiger"
 model_path: "outputs/iphone-captured/tiger"
 data_type: "iPhone"
 

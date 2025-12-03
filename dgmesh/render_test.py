@@ -51,7 +51,7 @@ def rendering_trajectory(dataset, opt, pipe, checkpoint, fps=24):
         density_thres=opt.init_density_threshold,
         dpsr_sig=opt.dpsr_sig,
     )
-    glctx = dr.RasterizeGLContext()
+    glctx = dr.RasterizeCudaContext()
     scene = Scene(dataset, gaussians, shuffle=False)
     ## Deform forward model
     deform = deform_model(

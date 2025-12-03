@@ -7,3 +7,11 @@ outputs/
 
 run_model.sh
 tmp.py
+
+*.png
+*.json
+*.zip
+__MACOSX/*
+*.npy
+*.ply
+*.so

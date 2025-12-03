@@ -715,9 +715,9 @@ def readiPhoneCameras(path, white_background=False):
         mask_path = image_path.replace(f'/rgb/{int(1 / ratio)}x/', f'/mask-tracking/{int(1 / ratio)}x/Annotations/')
         mask = np.array(Image.open(mask_path))
         if mask.ndim == 3:
-            mask = mask[..., 0] > 0  # For DEVA
+            mask = mask[..., 0] > 5  # For DEVA
         else:
-            mask = mask > 0  # For SAM
+            mask = mask > 5  # For SAM
         image_bg = copy.deepcopy(image) / 255.0
         if white_background:
             image[~mask] = 255.0

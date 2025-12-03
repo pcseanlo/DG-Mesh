@@ -47,6 +47,16 @@ def render(viewpoint_camera, pc: GaussianModel, pipe, bg_color: torch.Tensor, d_
     # Set up rasterization configuration
     tanfovx = math.tan(viewpoint_camera.FoVx * 0.5)
     tanfovy = math.tan(viewpoint_camera.FoVy * 0.5)
+    # Ensure camera matrices and camera center are torch tensors on the correct device/dtype
+    def _to_tensor(x):
+        if torch.is_tensor(x):
+            return x.to(device="cuda", dtype=torch.float32)
+        else:
+            return torch.tensor(x, dtype=torch.float32, device="cuda")
+
+    viewmatrix_t = _to_tensor(viewpoint_camera.world_view_transform)
+    projmatrix_t = _to_tensor(viewpoint_camera.full_proj_transform)
+    campos_t = _to_tensor(viewpoint_camera.camera_center)
 
     raster_settings = GaussianRasterizationSettings(
         image_height=int(viewpoint_camera.image_height),
@@ -55,10 +65,10 @@ def render(viewpoint_camera, pc: GaussianModel, pipe, bg_color: torch.Tensor, d_
         tanfovy=tanfovy,
         bg=bg_color,
         scale_modifier=scaling_modifier,
-        viewmatrix=viewpoint_camera.world_view_transform,
-        projmatrix=viewpoint_camera.full_proj_transform,
+        viewmatrix=viewmatrix_t,
+        projmatrix=projmatrix_t,
         sh_degree=pc.active_sh_degree,
-        campos=viewpoint_camera.camera_center,
+        campos=campos_t,
         prefiltered=False,
         debug=pipe.debug,
     )

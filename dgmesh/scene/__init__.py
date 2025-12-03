@@ -44,7 +44,7 @@ class Scene:
         self.train_cameras = {}
         self.test_cameras = {}
 
-        if args.data_type == "iPhone":
+        if args.data_type == "iPhone" or args.data_type == "ours":
             print("Assuming iPhone data set!")
             scene_info = sceneLoadTypeCallbacks["iPhone"](args.source_path, args.eval, args.white_background)
 

@@ -1,12 +1,13 @@
-source_path: "dg-mesh/horse"
-model_path: "outputs/dg-mesh/horse"
+source_path: "data_v4"
+model_path: "outputs/lamp"
+data_type: "ours"
 
 downsample: 1.0
 densify_until_iter: 10000
 warm_up: 3000
 iterations: 25000
 
-white_background: False
+white_background: True
 eval: True
 is_blender: True
 

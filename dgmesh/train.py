@@ -68,7 +68,7 @@ def training(
         density_thres=opt.init_density_threshold,
         dpsr_sig=opt.dpsr_sig,
     )
-    glctx = dr.RasterizeGLContext()
+    glctx = dr.RasterizeCudaContext()
     scene = Scene(dataset, gaussians, shuffle=True)
     ## Deform forward model
     deform = deform_model(
@@ -261,9 +261,33 @@ def training(
                 viewpoint_cam,
             )
 
+            gt_mask = viewpoint_cam.gt_alpha_mask.cuda()
+            
             ### Mask loss
             gt_mask = viewpoint_cam.gt_alpha_mask.cuda()
+            
+            # 1. Check Resolution: Compare Height (0) and Width (1)
+            # mask is (900, 1600, 1), gt_mask is (1080, 1920, 1)
+            if mask.shape[:2] != gt_mask.shape[:2]:
+                print(f"Fixing mismatch: {gt_mask.shape} -> {mask.shape}")
+                
+                # 2. Permute to NCHW: (H, W, C) -> (1, C, H, W)
+                # [1080, 1920, 1] -> [1, 1, 1080, 1920]
+                gt_mask = gt_mask.permute(2, 0, 1).unsqueeze(0).float()
+                
+                # 3. Interpolate using the first two dims of mask (H, W)
+                gt_mask = torch.nn.functional.interpolate(
+                    gt_mask, 
+                    size=mask.shape[:2],  # Use [:2] to get (900, 1600)
+                    mode='nearest'
+                )
+                
+                # 4. Permute back: (1, C, H, W) -> (H, W, C)
+                # [1, 1, 900, 1600] -> [900, 1600, 1]
+                gt_mask = gt_mask.squeeze(0).permute(1, 2, 0)
+
             mask_loss = l1_loss(mask, gt_mask)
+            losses["mask_loss"] = mask_loss * 100 * opt.mask_loss_weight
             losses["mask_loss"] = mask_loss * 100 * opt.mask_loss_weight
             ### mesh image loss
             gt_image = viewpoint_cam.original_image.cuda()
@@ -574,7 +598,7 @@ def testing(
 
     print("Start testing...")
     viewpoint_stack = scene.getTestCameras().copy()
-    glctx = dr.RasterizeGLContext()
+    glctx = dr.RasterizeCudaContext()
 
     total_psnr, total_ssim, total_msssim, total_lpips_a, total_lpips_v = (
         [],

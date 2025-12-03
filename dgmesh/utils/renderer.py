@@ -31,7 +31,7 @@ SMALL_NUMBER = 1e-6
 
 
 def render_mask(
-    glctx: dr.RasterizeGLContext,
+    glctx: dr.RasterizeCudaContext,
     mesh_v_pos: torch.Tensor,
     mesh_t_pos_idx: torch.Tensor,
     pose: torch.Tensor,
@@ -41,7 +41,7 @@ def render_mask(
     """Render the mask given (deformed) mesh and camera parameters
 
     Args:
-        glctx (dr.RasterizeGLContext): Rasterization context
+        glctx (dr.RasterizeCudaContext): Rasterization context
         mesh_v_pos (torch.tensor): Mesh vertex positions [N, 3]
         mesh_t_pos_idx (torch.tensor): Mesh triangle indices [M, 3]
         pose (torch.tensor): Camera pose in c2w format [4, 4]
@@ -67,7 +67,7 @@ def render_mask(
 
 
 def render_mesh(
-    glctx: dr.RasterizeGLContext,
+    glctx: dr.RasterizeCudaContext,
     mesh_v_pos: torch.Tensor,
     mesh_t_pos_idx: torch.Tensor,
     vtx_color: torch.Tensor,
@@ -79,7 +79,7 @@ def render_mesh(
     """Render the image given (deformed) mesh and camera parameters
 
     Args:
-        glctx (dr.RasterizeGLContext): Rasterization context
+        glctx (dr.RasterizeCudaContext): Rasterization context
         mesh_v_pos (torch.tensor): Mesh vertex positions [N, 3]
         mesh_t_pos_idx (torch.tensor): Mesh triangle indices [M, 3]
         vtx_color (torch.tensor): Vertex colors
@@ -122,7 +122,7 @@ def render_mesh(
 
 
 def mesh_renderer(
-    glctx: dr.RasterizeGLContext,
+    glctx: dr.RasterizeCudaContext,
     gaussians: gaussian_model,
     d_xyz: torch.Tensor,
     d_normal: torch.Tensor,
@@ -136,7 +136,7 @@ def mesh_renderer(
     """Gaussian mesh renderer
 
     Args:
-        glctx (dr.RasterizeGLContext): Rasterization context
+        glctx (dr.RasterizeCudaContext): Rasterization context
         gaussians (gaussian_model): Gaussians model
         d_xyz (torch.Tensor): Predicted xyz offset [N, 3]
         d_normal (torch.Tensor): Predicted normal offset [N, 3]
@@ -354,9 +354,10 @@ def pointcloud_renderer(points: torch.Tensor, viewpoint_cam: Camera) -> np.ndarr
     projected_points_h = projection_matrix @ points_h
     projected_points = projected_points_h[:2] / projected_points_h[2]
 
-    fig = plt.figure(figsize=(8, 8))
-    plt.xlim(0, 800)
-    plt.ylim(0, 800)
+    # change image size depends on our own data
+    fig = plt.figure(figsize=(12.8, 7.2), dpi=100)
+    plt.xlim(0, 1280)
+    plt.ylim(0, 720)
     plt.autoscale(False)
     plt.axis("off")
     plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
