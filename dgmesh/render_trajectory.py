@@ -122,14 +122,11 @@ def rendering_trajectory(
         d_normal = deform_normal.step(gaussians.get_xyz.detach(), time_input)
 
         # Compute and store deformed gaussian positions
+
         try:
-            base_xyz = gaussians.get_xyz.detach()
+            deformed_np = d_xyz.detach().cpu().numpy()
         except Exception:
-            base_xyz = gaussians.get_xyz
-        try:
-            deformed_np = (base_xyz + d_xyz).detach().cpu().numpy()
-        except Exception:
-            deformed_np = np.array(base_xyz) + np.array(d_xyz)
+            deformed_np = np.array(d_xyz)
         deformed_list.append(deformed_np)
         
         # Query the mesh rendering rgb
@@ -168,6 +165,7 @@ def rendering_trajectory(
     if len(deformed_list) > 0:
         try:
             deformed_arr = np.stack(deformed_list)
+            deformed_arr = deformed_arr - deformed_arr[0:1, :, :]
             np.save(osp.join(dataset.model_path, "deformed_xyz.npy"), deformed_arr)
             print(f"Saved deformed positions to {dataset.model_path}")
         except Exception as e:

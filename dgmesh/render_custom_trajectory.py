@@ -133,7 +133,7 @@ def rendering_trajectory(
     N = gaussians.get_xyz.shape[0]
     time_input = fid.unsqueeze(0).expand(N, -1)
 
-    _, d_rotation_0, d_scaling_0, _ = deform.step(
+    dxyz_0, d_rotation_0, d_scaling_0, _ = deform.step(
         gaussians.get_xyz.detach(), time_input
     )
     d_normal_0 = deform_normal.step(gaussians.get_xyz.detach(), time_input)
@@ -166,7 +166,7 @@ def rendering_trajectory(
         # Query the gaussians or use custom d_xyz
         if custom_dxyz is not None:
             # Use custom d_xyz
-            d_xyz = custom_dxyz[idx] - gaussians.get_xyz.detach()
+            d_xyz = custom_dxyz[idx] + dxyz_0
             d_rotation = d_rotation_0
             d_scaling = d_scaling_0
         else:
